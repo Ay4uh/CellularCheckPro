@@ -1,0 +1,3 @@
+// This is a minimal valid MP3 frame (silence/beep) to test playback.
+// Actually, writing binary via write_to_file with text content is risky if not supported.
+// I will use a simple shell command with base64 decode to create the binary file.

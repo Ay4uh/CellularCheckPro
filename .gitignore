@@ -73,3 +73,11 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Misc
+.env
+.env.local
+logcat_output.txt
+.gemini/
+*.sh
+vendor/
