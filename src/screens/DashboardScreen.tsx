@@ -6,6 +6,9 @@ import { spacing, shadows } from '../theme';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { AnimatedScaleButton } from '../components/AnimatedScaleButton';
 import { useTheme } from '../context/ThemeContext';
+import DeviceInfo from 'react-native-device-info';
+
+import { TestCard } from '../components/TestCard';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
@@ -50,14 +53,14 @@ export const DashboardScreen = ({ navigation }: any) => {
         }
     };
 
-    const startTest = (testId: string) => {
+    const startTest = React.useCallback((testId: string) => {
         const test = TestOrder.find(t => t.id === testId);
         if (test) {
             navigation.navigate(test.route);
         }
-    };
+    }, [navigation]);
 
-    const getIconName = (id: string) => {
+    const getIconName = React.useCallback((id: string) => {
         switch (id) {
             case 'Earpiece': return 'phone-in-talk';
             case 'Speaker': return 'volume-high';
@@ -83,23 +86,27 @@ export const DashboardScreen = ({ navigation }: any) => {
             case 'Video': return 'video-check';
             default: return 'circle-outline';
         }
-    };
+    }, []);
 
-    const getStatusColor = (status: string) => {
+    const getStatusColor = React.useCallback((status: string) => {
         switch (status) {
             case 'success': return colors.success;
             case 'failure': return colors.error;
             case 'skipped': return colors.warning;
             default: return colors.subtext;
         }
-    };
+    }, [colors]);
 
     const passedCount = Object.values(results).filter(r => r === 'success').length;
     const totalTests = TestOrder.length;
     const progress = Math.round((passedCount / totalTests) * 100);
 
     return (
-        <ScrollView style={styles.mainContainer} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView
+            style={styles.mainContainer}
+            contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
+        >
             <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} />
 
             {/* Professional Summary Header */}
@@ -110,21 +117,22 @@ export const DashboardScreen = ({ navigation }: any) => {
                         style={styles.logo}
                     />
                     <View style={styles.headerLeft}>
-                        <Text style={styles.greeting}>Diagnostic Summary</Text>
-                        <Text style={styles.deviceName}>Professional Suite</Text>
+                        <Text style={styles.greeting}>Device Overview</Text>
+                        <Text style={styles.deviceName} numberOfLines={1}>{DeviceInfo.getModel()}</Text>
                         <Text style={styles.statusSummary}>{passedCount}/{totalTests} Tests Passed</Text>
                     </View>
                     <View style={styles.headerRight}>
-                        <View style={styles.progressCircle}>
-                            <Text style={styles.progressText}>{progress}%</Text>
+                        <View style={[styles.progressCircle, { borderColor: progress === 100 ? colors.success : colors.primary }]}>
+                            <Text style={[styles.progressText, { color: progress === 100 ? colors.success : colors.primary }]}>{progress}%</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Automated Test Button */}
-                <AnimatedScaleButton
+                <TouchableOpacity
                     style={[styles.automatedButton, isAutomated && styles.automatedActive]}
                     onPress={isAutomated ? handleContinueAutomated : handleStartAutomated}
+                    activeOpacity={0.8}
                 >
                     <Icon
                         name={isAutomated ? "play-circle" : "auto-fix"}
@@ -134,17 +142,18 @@ export const DashboardScreen = ({ navigation }: any) => {
                     />
                     <View>
                         <Text style={styles.automatedTitle}>
-                            {isAutomated ? "Automated Test In Progress" : "Run All Tests"}
+                            {isAutomated ? "Continue sequence" : "Automated sequence"}
                         </Text>
                         <Text style={styles.automatedSub}>
-                            {isAutomated ? `Currently at: ${TestOrder[currentIndex]?.title}` : "Sequential automated hardware check"}
+                            {isAutomated ? "Resume hardware checks" : "Quickly test all features"}
                         </Text>
                     </View>
-                    <Icon name="chevron-right" size={24} color="rgba(255,255,255,0.7)" style={styles.chevron} />
-                </AnimatedScaleButton>
+                    <Icon name="chevron-right" size={24} color="#FFF" style={styles.chevron} />
+                </TouchableOpacity>
 
-                {/* Security Center Entry - REMOVED FOR PLAY STORE COMPLIANCE */}
-                {/* <AnimatedScaleButton
+                {/* Security Center Entry (Temporarily commented out for compliance) */}
+                {/* 
+                <AnimatedScaleButton
                     style={[styles.securityCard, shadows.soft]}
                     onPress={() => navigation.navigate('SecurityScan')}
                 >
@@ -153,54 +162,34 @@ export const DashboardScreen = ({ navigation }: any) => {
                     </View>
                     <View style={styles.securityTextContainer}>
                         <Text style={styles.securityTitle}>Security Center</Text>
-                        <Text style={styles.securitySub}>Deep system & virus diagnostic active</Text>
+                        <Text style={styles.securitySub}>Device protection is active</Text>
                     </View>
                     <View style={styles.securityBadge}>
-                        <Text style={styles.securityBadgeText}>SECURE</Text>
+                        <Text style={styles.securityBadgeText}>SAFE</Text>
                     </View>
-                    <Icon name="chevron-right" size={20} color={colors.subtext} />
-                </AnimatedScaleButton> */}
+                </AnimatedScaleButton>
+                */}
             </Animated.View>
 
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Manual Hardware Tests</Text>
+                <Text style={styles.sectionTitle}>Manual Tests</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Report')}>
                     <Text style={styles.sectionLink}>View Report</Text>
                 </TouchableOpacity>
             </View>
 
             <View style={styles.grid}>
-                {TestOrder.map((test) => {
-                    const status = results[test.id] || 'pending';
-                    const isDone = status !== 'pending';
-                    const iconColor = isDone ? getStatusColor(status) : colors.primary;
-
-                    return (
-                        <AnimatedScaleButton
-                            key={test.id}
-                            style={[styles.card, shadows.soft]}
-                            onPress={() => startTest(test.id)}
-                        >
-                            <View style={[styles.iconContainer, { backgroundColor: isDone ? iconColor + '15' : (theme.dark ? '#333' : '#F0F4F8') }]}>
-                                <Icon
-                                    name={getIconName(test.id)}
-                                    size={28}
-                                    color={iconColor}
-                                />
-                            </View>
-                            <Text style={styles.cardTitle} numberOfLines={1}>{test.title.replace(' Test', '')}</Text>
-                            <Text style={[styles.cardStatus, { color: isDone ? iconColor : colors.subtext }]}>
-                                {isDone ? status.toUpperCase() : 'Ready'}
-                            </Text>
-
-                            {isDone && (
-                                <View style={[styles.checkBadge, { backgroundColor: iconColor }]}>
-                                    <Icon name={status === 'success' ? "check" : "close"} size={12} color="#FFF" />
-                                </View>
-                            )}
-                        </AnimatedScaleButton>
-                    );
-                })}
+                {TestOrder.map((test) => (
+                    <TestCard
+                        key={test.id}
+                        test={test}
+                        status={results[test.id] || 'pending'}
+                        theme={theme}
+                        onPress={startTest}
+                        getIconName={getIconName}
+                        getStatusColor={getStatusColor}
+                    />
+                ))}
             </View>
         </ScrollView>
     );

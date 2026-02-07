@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Camera, useCameraDevice, useCameraFormat, VideoFile } from 'react-native-vision-camera';
+import { useIsFocused } from '@react-navigation/native';
 // @ts-ignore
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors, spacing, shadows } from '../theme';
@@ -8,6 +9,7 @@ import { useTestLogic } from '../hooks/useTestLogic';
 import Video from 'react-native-video';
 
 export const VideoTestScreen = () => {
+    const isFocused = useIsFocused();
     const device = useCameraDevice('back');
     const camera = useRef<Camera>(null);
     const [isRecording, setIsRecording] = useState(false);
@@ -24,6 +26,11 @@ export const VideoTestScreen = () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
     }, []);
+
+    const handleComplete = (result: 'success' | 'failure') => {
+        setIsPlaying(false);
+        completeTest(result);
+    };
 
     const requestPermissions = async () => {
         try {
@@ -51,6 +58,7 @@ export const VideoTestScreen = () => {
                     console.log('Recording finished:', video.path);
                     setVideoPath(video.path);
                     setIsRecording(false);
+                    setIsPlaying(true);
                 },
                 onRecordingError: (error) => {
                     console.error('Recording error:', error);
@@ -98,7 +106,7 @@ export const VideoTestScreen = () => {
                             ref={camera}
                             style={StyleSheet.absoluteFill}
                             device={device}
-                            isActive={!videoPath}
+                            isActive={isFocused && !videoPath}
                             video={true}
                             audio={true}
                         />
@@ -109,6 +117,7 @@ export const VideoTestScreen = () => {
                             controls={true}
                             resizeMode="cover"
                             repeat={true}
+                            paused={!isFocused || !isPlaying}
                         />
                     )}
 
@@ -144,11 +153,11 @@ export const VideoTestScreen = () => {
             <View style={styles.footer}>
                 <Text style={styles.question}>Is audio and video perfectly synced?</Text>
                 <View style={styles.controls}>
-                    <TouchableOpacity style={[styles.btn, styles.failBtn]} onPress={() => completeTest('failure')}>
+                    <TouchableOpacity style={[styles.btn, styles.failBtn]} onPress={() => handleComplete('failure')}>
                         <Icon name="close" size={24} color="#FFF" />
                         <Text style={styles.btnText}>Bad Sync</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.btn, styles.passBtn]} onPress={() => completeTest('success')}>
+                    <TouchableOpacity style={[styles.btn, styles.passBtn]} onPress={() => handleComplete('success')}>
                         <Icon name="check" size={24} color="#FFF" />
                         <Text style={styles.btnText}>Perfect Sync</Text>
                     </TouchableOpacity>

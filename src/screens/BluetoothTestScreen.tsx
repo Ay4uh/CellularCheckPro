@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import BleManager from 'react-native-ble-manager';
 import { colors, spacing, shadows } from '../theme';
 import { useTestLogic } from '../hooks/useTestLogic';
+import DeviceInfo from 'react-native-device-info';
 
 const { BleManagerModule } = NativeModules;
 const bleManagerEmitter = BleManagerModule ? new NativeEventEmitter(BleManagerModule) : null;
@@ -27,10 +28,14 @@ export const BluetoothTestScreen = () => {
         }
 
         const handleDiscoverPeripheral = (peripheral: any) => {
+            // RELAXED FILTERING: Even if it has no name, we show it (likely a sensor or phone 
+            // not broadcasting name over BLE). We filter by ID to avoid duplicates.
             setDevices(prev => {
                 const exists = prev.find(d => d.id === peripheral.id);
                 if (!exists) return [...prev, peripheral];
-                return prev;
+
+                // Update RSSI if it already exists
+                return prev.map(d => d.id === peripheral.id ? { ...d, rssi: peripheral.rssi } : d);
             });
         };
 
@@ -41,7 +46,8 @@ export const BluetoothTestScreen = () => {
 
         const handleStateUpdate = (state: any) => {
             console.log('BT State Updated:', state);
-            setBtState(state.state === 'on' ? 'on' : 'off');
+            const newState = state.state === 'on' ? 'on' : 'off';
+            setBtState(newState);
         };
 
         if (!bleManagerEmitter) return;
@@ -54,6 +60,7 @@ export const BluetoothTestScreen = () => {
 
         return () => {
             listeners.forEach(l => l.remove());
+            BleManager.stopScan();
         };
     }, []);
 
@@ -72,10 +79,13 @@ export const BluetoothTestScreen = () => {
                 const result = await PermissionsAndroid.requestMultiple([
                     PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
                     PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-                    PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
                     PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
                 ]);
-                return result['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED;
+                return (
+                    result['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED &&
+                    result['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED &&
+                    result['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED
+                );
             } else {
                 const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
                 return result === PermissionsAndroid.RESULTS.GRANTED;
@@ -86,12 +96,12 @@ export const BluetoothTestScreen = () => {
 
     const toggleBluetooth = async () => {
         try {
-            if (btState === 'off') {
+            if (btState !== 'on') {
                 await BleManager.enableBluetooth();
                 setBtState('on');
             } else {
                 Alert.alert('Info', 'To disable Bluetooth, please use the system settings.', [
-                    { text: 'Open Settings', onPress: () => Linking.sendIntent('android.settings.BLUETOOTH_SETTINGS') },
+                    { text: 'Open Settings', onPress: () => Linking.openSettings() },
                     { text: 'Cancel', style: 'cancel' }
                 ]);
             }
@@ -102,7 +112,6 @@ export const BluetoothTestScreen = () => {
 
     const makeDiscoverable = async () => {
         try {
-            // Android intent for discoverability (usually 300 seconds)
             await Linking.sendIntent('android.bluetooth.adapter.action.REQUEST_DISCOVERABLE');
         } catch (e) {
             console.error('Discoverable error:', e);
@@ -113,30 +122,62 @@ export const BluetoothTestScreen = () => {
     const startScan = async () => {
         if (isScanning) return;
 
+        // 1. Check Permissions
         const hasPermission = await checkPermissions();
         if (!hasPermission) {
-            Alert.alert('Permission Denied', 'Location/Bluetooth permissions are required to scan.');
+            Alert.alert('Permission Denied', 'Location and Bluetooth permissions are required to scan for nearby devices.');
             return;
         }
 
+        // 2. Check Device Settings (Bluetooth & Location Services)
         try {
+            if (Platform.OS === 'android') {
+                const locationEnabled = await DeviceInfo.isLocationEnabled();
+                if (!locationEnabled) {
+                    Alert.alert(
+                        'Location Services Required',
+                        'Android requires Location Services (GPS) to be enabled for Bluetooth scanning. Please turn it on in settings.',
+                        [
+                            { text: 'Open Settings', onPress: () => Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS') },
+                            { text: 'Cancel', style: 'cancel' }
+                        ]
+                    );
+                    return;
+                }
+
+                // Ensure Bluetooth is actually ON
+                if (btState !== 'on') {
+                    await BleManager.enableBluetooth();
+                    // Give it a moment to actually turn on
+                    await new Promise(resolve => setTimeout(() => resolve(null), 1000));
+                }
+            }
+
             setDevices([]);
             setIsScanning(true);
-            // Scan for 10 seconds, no specific service UUIDs
-            // @ts-ignore
-            await BleManager.scan([], 10, false);
+
+            // CORRECT SIGNATURE for react-native-ble-manager v12:
+            // scan(options: ScanOptions)
+            await BleManager.scan({
+                serviceUUIDs: [],
+                seconds: 20, // Increased to 20 for better discovery
+                allowDuplicates: true
+            });
         } catch (err) {
             console.error('Scan error:', err);
             setIsScanning(false);
-            Alert.alert('Scan Failed', 'Could not start Bluetooth scan.');
+            Alert.alert('Scan Failed', 'Could not start Bluetooth scan. Please verify Bluetooth is on.');
         }
     };
 
     const renderDeviceItem = ({ item }: { item: any }) => (
         <View style={styles.deviceItem}>
-            <Icon name="bluetooth" size={20} color={colors.primary} />
-            <View>
-                <Text style={styles.deviceName}>{item.name || 'Unnamed Device'}</Text>
+            <View style={styles.deviceIcon}>
+                <Icon name="bluetooth" size={20} color={colors.primary} />
+                <Text style={styles.rssiText}>{item.rssi} dBm</Text>
+            </View>
+            <View style={styles.deviceInfo}>
+                <Text style={styles.deviceName}>{item.name || item.localName || 'Unnamed BLE Device'}</Text>
                 <Text style={styles.deviceId}>{item.id}</Text>
             </View>
         </View>
@@ -147,7 +188,15 @@ export const BluetoothTestScreen = () => {
             <View style={styles.header}>
                 {isAutomated && <Text style={styles.seqText}>Test Sequence</Text>}
                 <Text style={styles.title}>Bluetooth Test</Text>
-                <Text style={styles.subtitle}>Scanning for nearby devices to verify hardware.</Text>
+                <Text style={styles.subtitle}>Scanning for nearby BLE devices to verify hardware.</Text>
+            </View>
+
+            {/* Educational Notice for BLE vs Classic */}
+            <View style={styles.noticeCard}>
+                <Icon name="information-outline" size={20} color={colors.primary} />
+                <Text style={styles.noticeText}>
+                    This test uses BLE (Low Energy). Standard phones/laptops may only appear if they are explicitly broadcasting a BLE signal or running a compatible app.
+                </Text>
             </View>
 
             <View style={styles.content}>
@@ -241,6 +290,24 @@ const styles = StyleSheet.create({
         color: colors.subtext,
         textAlign: 'center'
     },
+    noticeCard: {
+        flexDirection: 'row',
+        backgroundColor: colors.card,
+        marginHorizontal: spacing.l,
+        padding: 12,
+        borderRadius: 12,
+        borderLeftWidth: 4,
+        borderLeftColor: colors.primary,
+        alignItems: 'center',
+        gap: 12,
+        ...shadows.soft
+    },
+    noticeText: {
+        flex: 1,
+        fontSize: 12,
+        color: colors.subtext,
+        lineHeight: 18
+    },
     content: {
         flex: 1,
         padding: spacing.l,
@@ -321,6 +388,19 @@ const styles = StyleSheet.create({
         gap: 15,
         borderWidth: 1,
         borderColor: colors.border
+    },
+    deviceIcon: {
+        alignItems: 'center',
+        minWidth: 50,
+    },
+    rssiText: {
+        fontSize: 10,
+        color: colors.primary,
+        fontWeight: 'bold',
+        marginTop: 4
+    },
+    deviceInfo: {
+        flex: 1
     },
     deviceName: {
         fontSize: 16,
