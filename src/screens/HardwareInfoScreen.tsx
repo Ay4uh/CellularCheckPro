@@ -231,7 +231,8 @@ const createStyles = (theme: any) => {
         container: {
             padding: spacing.m,
             backgroundColor: colors.background,
-            minHeight: '100%'
+            minHeight: '100%',
+            paddingBottom: 110,
         },
         title: {
             fontSize: 22,

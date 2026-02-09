@@ -11,7 +11,7 @@ import { TestProvider } from './src/context/TestContext';
 
 const App = (): React.JSX.Element => {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={{ backgroundColor: '#1e1e1e' }}>
       <TestProvider>
         <AppNavigator />
       </TestProvider>

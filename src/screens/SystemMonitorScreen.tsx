@@ -32,6 +32,8 @@ export const SystemMonitorScreen = () => {
         cores: 0
     });
     const [cpuFrequencies, setCpuFrequencies] = useState<number[]>([]);
+    const [cpuHistory, setCpuHistory] = useState<number[]>(new Array(40).fill(0));
+    const [ramHistory, setRamHistory] = useState<number[]>(new Array(40).fill(0));
 
     const [wifiInfo, setWifiInfo] = useState<{
         isConnected: boolean;
@@ -119,18 +121,23 @@ export const SystemMonitorScreen = () => {
     const updateRealtimeData = async () => {
         try {
             // RAM 
-            const total = await DeviceInfo.getTotalMemory();
-            let used = 0;
-            if (Platform.OS === 'android') {
-                used = await DeviceInfo.getUsedMemory().catch(() => 0);
-                if (used === 0) {
-                    used = total * 0.4 + (Math.random() * total * 0.2);
-                }
+            if (HardwareModule && HardwareModule.getMemoryUsage) {
+                const mem = await HardwareModule.getMemoryUsage();
+                setRam({ total: mem.total, used: mem.used, percentage: Math.round(mem.percentage) });
+                setRamHistory(prev => [...prev.slice(1), mem.percentage]);
             } else {
-                used = await DeviceInfo.getUsedMemory().catch(() => total * 0.5);
+                const total = await DeviceInfo.getTotalMemory();
+                let used = await DeviceInfo.getUsedMemory().catch(() => total * 0.4);
+                const percentage = Math.round((used / total) * 100);
+                setRam({ total, used, percentage });
+                setRamHistory(prev => [...prev.slice(1), percentage]);
             }
-            const percentage = Math.round((used / total) * 100);
-            setRam({ total, used, percentage });
+
+            // CPU Load
+            if (HardwareModule && HardwareModule.getSystemLoad) {
+                const load = await HardwareModule.getSystemLoad();
+                setCpuHistory(prev => [...prev.slice(1), load]);
+            }
 
             // CPU Frequencies
             if (HardwareModule && HardwareModule.getCpuFrequencies) {
@@ -160,8 +167,8 @@ export const SystemMonitorScreen = () => {
 
     useEffect(() => {
         loadData();
-        // Optimizing update frequency to 3s for better battery life and performance
-        const interval = setInterval(updateRealtimeData, 3000);
+        // High frequency for "live" graphs
+        const interval = setInterval(updateRealtimeData, 1000);
         return () => clearInterval(interval);
     }, []);
 
@@ -205,6 +212,7 @@ export const SystemMonitorScreen = () => {
 
             <RamCard
                 ram={ram}
+                ramHistory={ramHistory}
                 theme={theme}
                 fadeAnim={fadeAnim3}
                 slideAnim={slideAnim}
@@ -214,6 +222,7 @@ export const SystemMonitorScreen = () => {
             <CpuCard
                 cpuInfo={cpuInfo}
                 cpuFrequencies={cpuFrequencies}
+                cpuHistory={cpuHistory}
                 expandedCpu={expandedCpu}
                 toggleCpuExpansion={toggleCpuExpansion}
                 theme={theme}
@@ -240,7 +249,7 @@ const createStyles = (theme: any) => {
         scrollContent: {
             padding: spacing.m,
             paddingTop: 20,
-            paddingBottom: 90,
+            paddingBottom: 110,
         },
         header: {
             marginBottom: spacing.l,

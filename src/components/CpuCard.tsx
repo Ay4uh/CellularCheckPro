@@ -9,6 +9,7 @@ interface CpuCardProps {
         cores: number;
     };
     cpuFrequencies: number[];
+    cpuHistory: number[];
     expandedCpu: boolean;
     toggleCpuExpansion: () => void;
     theme: any;
@@ -16,9 +17,12 @@ interface CpuCardProps {
     slideAnim: Animated.Value;
 }
 
+import { UsageGraph } from './UsageGraph';
+
 export const CpuCard = React.memo(({
     cpuInfo,
     cpuFrequencies,
+    cpuHistory,
     expandedCpu,
     toggleCpuExpansion,
     theme,
@@ -66,6 +70,12 @@ export const CpuCard = React.memo(({
                 <Text style={[styles.value, { color: colors.text }]}>{cpuInfo.cores} Cores</Text>
             </View>
 
+            <UsageGraph
+                data={cpuHistory}
+                color="#FF9800"
+                height={80}
+            />
+
             <TouchableOpacity
                 style={[styles.expandBtn, { borderTopColor: colors.border }]}
                 onPress={toggleCpuExpansion}
@@ -96,6 +106,7 @@ export const CpuCard = React.memo(({
 }, (prev, next) => {
     return prev.expandedCpu === next.expandedCpu &&
         JSON.stringify(prev.cpuFrequencies) === JSON.stringify(next.cpuFrequencies) &&
+        JSON.stringify(prev.cpuHistory) === JSON.stringify(next.cpuHistory) &&
         prev.theme.dark === next.theme.dark;
 });
 

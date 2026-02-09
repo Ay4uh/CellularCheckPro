@@ -11,7 +11,7 @@ import { generatePDF as createPDF } from 'react-native-html-to-pdf';
 import Share from 'react-native-share';
 
 export const ReportScreen = () => {
-    const { results, clearResults } = useTestContext();
+    const { results, extraData, clearResults } = useTestContext();
     const navigation = useNavigation();
     const [exporting, setExporting] = useState(false);
     const [deviceInfo, setDeviceInfo] = useState<any>({ brand: '', model: '', id: '' });
@@ -90,9 +90,37 @@ export const ReportScreen = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${rows}
+                ${rows}
                             </tbody>
                         </table>
+
+                        ${extraData['Connectivity'] ? `
+                        <div class="summary-box" style="margin-top: 30px;">
+                            <h3 style="color: #2196F3; border-bottom: 2px solid #2196F3; padding-bottom: 8px;">NETWORK ANALYSIS</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <td><strong>Carrier:</strong> ${extraData['Connectivity'].simData?.carrierName} (${extraData['Connectivity'].simData?.networkType})</td>
+                                    <td style="text-align: right;"><strong>SIM Type:</strong> ${extraData['Connectivity'].simData?.activeSimCount > 1 ? 'Dual SIM' : 'Single SIM'}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Signal (RSRP):</strong> ${extraData['Connectivity'].signalData?.rsrp} dBm</td>
+                                    <td style="text-align: right;"><strong>Quality (RSRQ):</strong> ${extraData['Connectivity'].signalData?.rsrq} dB</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Wi-Fi SSID:</strong> ${extraData['Connectivity'].wifiData?.ssid?.replace(/"/g, '')}</td>
+                                    <td style="text-align: right;"><strong>Wi-Fi Band:</strong> ${extraData['Connectivity'].wifiData?.band} (${extraData['Connectivity'].wifiData?.frequency} MHz)</td>
+                                </tr>
+                            </table>
+                            <div style="background: #E3F2FD; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                                <h4 style="margin: 0 0 10px 0; font-size: 14px;">Performance Benchmarks</h4>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span><strong>Download:</strong> ${extraData['Connectivity'].speedTest.download.toFixed(2)} Mbps</span>
+                                    <span><strong>Upload:</strong> ${extraData['Connectivity'].speedTest.upload.toFixed(2)} Mbps</span>
+                                    <span><strong>Latency:</strong> ${extraData['Connectivity'].speedTest.ping} ms</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
 
                         <div class="footer">
                             <p>Cellular Pro - Professional Smartphone Diagnostics</p>
@@ -194,6 +222,7 @@ const createStyles = (theme: any) => {
         container: {
             flexGrow: 1,
             padding: spacing.m,
+            paddingBottom: 110,
             backgroundColor: colors.background,
         },
         title: {

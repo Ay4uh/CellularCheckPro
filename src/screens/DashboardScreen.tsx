@@ -75,7 +75,6 @@ export const DashboardScreen = ({ navigation }: any) => {
             case 'GPS': return 'crosshairs-gps';
             case 'Signal': return 'signal-cellular-3';
             case 'Fingerprint': return 'fingerprint';
-            case 'Face ID': return 'face-recognition';
             case 'Wi-Fi': return 'wifi';
             case 'Bluetooth': return 'bluetooth';
             case 'Sensors': return 'compass-outline';
@@ -84,6 +83,7 @@ export const DashboardScreen = ({ navigation }: any) => {
             case 'Buttons': return 'gesture-tap-button';
             case 'Headset': return 'headphones';
             case 'Video': return 'video-check';
+            case 'Storage': return 'database-search';
             default: return 'circle-outline';
         }
     }, []);
@@ -128,27 +128,30 @@ export const DashboardScreen = ({ navigation }: any) => {
                     </View>
                 </View>
 
-                {/* Automated Test Button */}
+                {/* Automated One-Click Test Button */}
                 <TouchableOpacity
-                    style={[styles.automatedButton, isAutomated && styles.automatedActive]}
+                    style={[styles.automatedButton, isAutomated && styles.automatedActive, shadows.soft]}
                     onPress={isAutomated ? handleContinueAutomated : handleStartAutomated}
                     activeOpacity={0.8}
                 >
-                    <Icon
-                        name={isAutomated ? "play-circle" : "auto-fix"}
-                        size={24}
-                        color="#FFF"
-                        style={styles.btnIcon}
-                    />
-                    <View>
+                    <View style={styles.automatedIconContainer}>
+                        <Icon
+                            name={isAutomated ? "play-circle" : "shield-sync-outline"}
+                            size={28}
+                            color="#FFF"
+                        />
+                    </View>
+                    <View style={styles.automatedTextContainer}>
                         <Text style={styles.automatedTitle}>
-                            {isAutomated ? "Continue sequence" : "Automated sequence"}
+                            {isAutomated ? "Resuming Scan..." : "One-Click Diagnostic"}
                         </Text>
                         <Text style={styles.automatedSub}>
-                            {isAutomated ? "Resume hardware checks" : "Quickly test all features"}
+                            {isAutomated ? `Currently on step ${currentIndex + 1}` : "Run all hardware tests automatically"}
                         </Text>
                     </View>
-                    <Icon name="chevron-right" size={24} color="#FFF" style={styles.chevron} />
+                    <View style={styles.automatedAction}>
+                        <Icon name="chevron-right" size={24} color="rgba(255,255,255,0.7)" />
+                    </View>
                 </TouchableOpacity>
 
                 {/* Security Center Entry (Temporarily commented out for compliance) */}
@@ -191,7 +194,7 @@ export const DashboardScreen = ({ navigation }: any) => {
                     />
                 ))}
             </View>
-        </ScrollView>
+        </ScrollView >
     );
 };
 
@@ -205,7 +208,7 @@ const createStyles = (theme: any) => {
         container: {
             padding: spacing.m,
             paddingTop: 20,
-            paddingBottom: 85,
+            paddingBottom: 110,
         },
         headerCard: {
             backgroundColor: colors.card,
@@ -263,7 +266,7 @@ const createStyles = (theme: any) => {
         },
         automatedButton: {
             backgroundColor: colors.primary,
-            borderRadius: 16,
+            borderRadius: 18,
             padding: spacing.m,
             flexDirection: 'row',
             alignItems: 'center',
@@ -277,20 +280,31 @@ const createStyles = (theme: any) => {
             backgroundColor: colors.secondary,
             shadowColor: colors.secondary,
         },
-        btnIcon: {
+        automatedIconContainer: {
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            justifyContent: 'center',
+            alignItems: 'center',
             marginRight: spacing.m,
+        },
+        automatedTextContainer: {
+            flex: 1,
         },
         automatedTitle: {
             color: '#FFF',
-            fontSize: 16,
+            fontSize: 17,
             fontWeight: 'bold',
+            letterSpacing: 0.3,
         },
         automatedSub: {
-            color: 'rgba(255,255,255,0.8)',
+            color: 'rgba(255,255,255,0.9)',
             fontSize: 12,
+            marginTop: 1,
         },
-        chevron: {
-            marginLeft: 'auto',
+        automatedAction: {
+            marginLeft: spacing.s,
         },
         securityCard: {
             backgroundColor: theme.dark ? '#333' : '#F8F9FA',

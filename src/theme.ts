@@ -42,7 +42,13 @@ export const lightTheme = {
         warning: '#FDCB6E',
         border: '#DFE6E9',
         shadow: '#B2BEC3',
-        notification: '#FF7675', // For badges etc
+        notification: '#FF7675',
+    },
+    fonts: {
+        regular: { fontFamily: 'sans-serif', fontWeight: 'normal' as const },
+        medium: { fontFamily: 'sans-serif-medium', fontWeight: '500' as const },
+        bold: { fontFamily: 'sans-serif', fontWeight: 'bold' as const },
+        heavy: { fontFamily: 'sans-serif', fontWeight: '900' as const },
     }
 };
 
@@ -53,7 +59,7 @@ export const darkTheme = {
         card: '#2d2d2d',
         text: '#ffffff',
         subtext: '#b3b3b3',
-        primary: '#4fa3e3', // Slightly lighter blue for dark mode
+        primary: '#4fa3e3',
         secondary: '#00CEC9',
         success: '#00B894',
         error: '#FF7675',
@@ -61,6 +67,12 @@ export const darkTheme = {
         border: '#444444',
         shadow: '#000000',
         notification: '#FF7675',
+    },
+    fonts: {
+        regular: { fontFamily: 'sans-serif', fontWeight: 'normal' as const },
+        medium: { fontFamily: 'sans-serif-medium', fontWeight: '500' as const },
+        bold: { fontFamily: 'sans-serif', fontWeight: 'bold' as const },
+        heavy: { fontFamily: 'sans-serif', fontWeight: '900' as const },
     }
 };
 

@@ -50,7 +50,6 @@ export const FingerprintTestScreen = () => {
     };
 
     const getBiometryIcon = () => {
-        if (biometryType === BiometryTypes.FaceID) return "face-recognition";
         if (biometryType === BiometryTypes.TouchID) return "fingerprint";
         if (biometryType === BiometryTypes.Biometrics) return "fingerprint";
         return "fingerprint-off";
@@ -61,7 +60,7 @@ export const FingerprintTestScreen = () => {
             <View style={styles.header}>
                 {isAutomated && <Text style={styles.seqText}>Test Sequence</Text>}
                 <Text style={styles.title}>Biometric Check</Text>
-                <Text style={styles.subtitle}>Verify Fingerprint or Face sensors.</Text>
+                <Text style={styles.subtitle}>Verify biometric sensor responsiveness.</Text>
                 <Text style={styles.disclaimer}>Only tests sensor response. No data stored.</Text>
             </View>
 

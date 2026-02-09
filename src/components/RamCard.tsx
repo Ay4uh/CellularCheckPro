@@ -9,13 +9,16 @@ interface RamCardProps {
         total: number;
         percentage: number;
     };
+    ramHistory: number[];
     theme: any;
     fadeAnim: Animated.Value;
     slideAnim: Animated.Value;
     bytesToGB: (bytes: number) => string;
 }
 
-export const RamCard = React.memo(({ ram, theme, fadeAnim, slideAnim, bytesToGB }: RamCardProps) => {
+import { UsageGraph } from './UsageGraph';
+
+export const RamCard = React.memo(({ ram, ramHistory, theme, fadeAnim, slideAnim, bytesToGB }: RamCardProps) => {
     const { colors } = theme;
 
     const renderProgressBar = (percentage: number, color: string) => (
@@ -39,11 +42,20 @@ export const RamCard = React.memo(({ ram, theme, fadeAnim, slideAnim, bytesToGB 
                 <Text style={[styles.label, { color: colors.subtext }]}>Total: {bytesToGB(ram.total)}</Text>
             </View>
             {renderProgressBar(ram.percentage, ram.percentage > 85 ? colors.warning : '#4CAF50')}
+
+            <UsageGraph
+                data={ramHistory}
+                color="#4CAF50"
+                height={80}
+            />
+
             <Text style={[styles.percentageText, { color: colors.text }]}>{ram.percentage}% Used</Text>
         </Animated.View>
     );
 }, (prev, next) => {
-    return prev.ram.percentage === next.ram.percentage && prev.theme.dark === next.theme.dark;
+    return prev.ram.percentage === next.ram.percentage &&
+        JSON.stringify(prev.ramHistory) === JSON.stringify(next.ramHistory) &&
+        prev.theme.dark === next.theme.dark;
 });
 
 const styles = StyleSheet.create({

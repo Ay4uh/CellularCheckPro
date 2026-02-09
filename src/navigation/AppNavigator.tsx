@@ -20,10 +20,7 @@ import { ProximityTestScreen } from '../screens/ProximityTestScreen';
 import { VibrationTestScreen } from '../screens/VibrationTestScreen';
 import { FlashTestScreen } from '../screens/FlashTestScreen';
 import { GPSTestScreen } from '../screens/GPSTestScreen';
-import { NetworkTestScreen } from '../screens/NetworkTestScreen';
 import { FingerprintTestScreen } from '../screens/FingerprintTestScreen';
-import { FaceUnlockTestScreen } from '../screens/FaceUnlockTestScreen';
-import { WifiTestScreen } from '../screens/WifiTestScreen';
 import { BluetoothTestScreen } from '../screens/BluetoothTestScreen';
 import { SensorTestScreen } from '../screens/SensorTestScreen';
 import { BatteryTestScreen } from '../screens/BatteryTestScreen';
@@ -35,6 +32,8 @@ import { VideoTestScreen } from '../screens/VideoTestScreen';
 import { DepthTestScreen } from '../screens/DepthTestScreen';
 import { AboutScreen } from '../screens/AboutScreen';
 import { SystemMonitorScreen } from '../screens/SystemMonitorScreen';
+import { NetworkDiagnosticsScreen } from '../screens/NetworkDiagnosticsScreen';
+import { StorageManagerScreen } from '../screens/StorageManagerScreen';
 
 import { DisplayTestScreen } from '../screens/DisplayTestScreen';
 import { MultiTouchTestScreen } from '../screens/MultiTouchTestScreen';
@@ -53,9 +52,8 @@ export type RootStackParamList = {
     VibrationTest: undefined;
     FlashTest: undefined;
     GPSTest: undefined;
-    NetworkTest: undefined;
+    NetworkDiagnostics: undefined;
     FingerprintTest: undefined;
-    FaceUnlockTest: undefined;
     WifiTest: undefined;
     BluetoothTest: undefined;
     SensorTest: undefined;
@@ -69,6 +67,7 @@ export type RootStackParamList = {
     DisplayTest: undefined;
     MultiTouchTest: undefined;
     SecurityScan: undefined;
+    StorageManager: undefined;
     About: undefined;
 };
 
@@ -122,10 +121,8 @@ const DashboardStack = () => {
             <Stack.Screen name="VibrationTest" component={VibrationTestScreen} options={{ title: 'Vibration Test' }} />
             <Stack.Screen name="FlashTest" component={FlashTestScreen} options={{ title: 'Flash Test' }} />
             <Stack.Screen name="GPSTest" component={GPSTestScreen} options={{ title: 'GPS Test' }} />
-            <Stack.Screen name="NetworkTest" component={NetworkTestScreen} options={{ title: 'Signal Test' }} />
+            <Stack.Screen name="NetworkDiagnostics" component={NetworkDiagnosticsScreen} options={{ title: 'Connectivity Hub' }} />
             <Stack.Screen name="FingerprintTest" component={FingerprintTestScreen} options={{ title: 'Fingerprint Test' }} />
-            <Stack.Screen name="FaceUnlockTest" component={FaceUnlockTestScreen} options={{ title: 'Face ID Test' }} />
-            <Stack.Screen name="WifiTest" component={WifiTestScreen} options={{ title: 'Wi-Fi Test' }} />
             <Stack.Screen name="BluetoothTest" component={BluetoothTestScreen} options={{ title: 'Bluetooth Test' }} />
             <Stack.Screen name="SensorTest" component={SensorTestScreen} options={{ title: 'Sensors Test' }} />
             <Stack.Screen name="BatteryTest" component={BatteryTestScreen} options={{ title: 'Battery Test' }} />
@@ -137,7 +134,7 @@ const DashboardStack = () => {
             <Stack.Screen name="DepthTest" component={DepthTestScreen} options={{ title: 'Depth Test' }} />
             <Stack.Screen name="DisplayTest" component={DisplayTestScreen} options={{ headerShown: false }} />
             <Stack.Screen name="MultiTouchTest" component={MultiTouchTestScreen} options={{ headerShown: false }} />
-            {/* <Stack.Screen name="SecurityScan" component={SecurityScanScreen} options={{ title: 'Security Scan' }} /> */}
+            <Stack.Screen name="StorageManager" component={StorageManagerScreen} options={{ title: 'Storage & Apps' }} />
             <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About' }} />
         </Stack.Navigator>
     );
@@ -151,12 +148,18 @@ export const AppNavigator = () => {
     );
 };
 
+import { StatusBar } from 'react-native';
+
 const AppNavigatorContent = () => {
     const { theme } = useTheme();
     const colors = theme.colors;
 
     return (
-        <NavigationContainer>
+        <NavigationContainer theme={theme as any}>
+            <StatusBar
+                barStyle={theme.dark ? 'light-content' : 'dark-content'}
+                backgroundColor={colors.card}
+            />
             <Tab.Navigator
                 screenOptions={({ route }) => ({
                     headerShown: true,
@@ -175,21 +178,23 @@ const AppNavigatorContent = () => {
                         }
                         return {
                             position: 'absolute',
-                            bottom: 10,
-                            left: 20,
-                            right: 20,
-                            backgroundColor: colors.card,
-                            borderRadius: 25,
-                            height: 65,
+                            bottom: 20,
+                            left: '15%',
+                            right: '15%',
+                            backgroundColor: theme.dark ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                            borderRadius: 30,
+                            height: 60,
                             borderTopWidth: 0,
-                            elevation: 8, // Android shadow
-                            shadowColor: '#000', // iOS shadow
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.1,
+                            elevation: 10,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 5 },
+                            shadowOpacity: 0.2,
                             shadowRadius: 10,
-                            paddingBottom: 0, // Reset padding since no labels
+                            paddingBottom: 0,
                             justifyContent: 'center',
-                            alignItems: 'center'
+                            alignItems: 'center',
+                            borderWidth: 1,
+                            borderColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                         };
                     })(route),
                     tabBarIcon: ({ color, size, focused }) => {
@@ -204,19 +209,19 @@ const AppNavigatorContent = () => {
                         if (focused) {
                             return (
                                 <View style={{
-                                    width: 50,
-                                    height: 50,
-                                    borderRadius: 25,
-                                    backgroundColor: colors.primary + '15', // 15% opacity primary color
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 22,
+                                    backgroundColor: colors.primary + '20',
                                     justifyContent: 'center',
                                     alignItems: 'center',
-                                    top: 10 // Center vertically in the 65 height bar
+                                    marginTop: 0,
                                 }}>
-                                    <Icon name={iconName} size={28} color={colors.primary} />
+                                    <Icon name={iconName} size={24} color={colors.primary} />
                                 </View>
                             );
                         }
-                        return <Icon name={iconName} size={26} color={color} style={{ top: 10 }} />;
+                        return <Icon name={iconName} size={24} color={color} />;
                     },
                 })}
             >
@@ -232,21 +237,23 @@ const AppNavigatorContent = () => {
                             }
                             return {
                                 position: 'absolute',
-                                bottom: 25,
-                                left: 20,
-                                right: 20,
-                                backgroundColor: colors.card,
-                                borderRadius: 25,
-                                height: 65,
+                                bottom: 20,
+                                left: '15%',
+                                right: '15%',
+                                backgroundColor: theme.dark ? 'rgba(30,30,30,0.95)' : 'rgba(255,255,255,0.95)',
+                                borderRadius: 30,
+                                height: 60,
                                 borderTopWidth: 0,
-                                elevation: 8,
+                                elevation: 10,
                                 shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
+                                shadowOffset: { width: 0, height: 5 },
+                                shadowOpacity: 0.2,
                                 shadowRadius: 10,
                                 paddingBottom: 0,
                                 justifyContent: 'center',
-                                alignItems: 'center'
+                                alignItems: 'center',
+                                borderWidth: 1,
+                                borderColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                             };
                         })(route)
                     })}
